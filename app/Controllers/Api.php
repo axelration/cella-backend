@@ -53,37 +53,64 @@ class Api extends BaseController
 
         $username = $this->request->getVar('username');
         $password = $this->request->getVar('password');
-           
-        $user = $this->userModel->where('username', $username)->first();
-   
-        if(is_null($user)) {
-            return $this->respond(['status' => $status, 'message' => $msg], 401);
-        }
+        $device_id = $this->request->getVar('device_id') ?? '';
+        
+        try {
+            $user = $this->userModel->where('username', $username)->first();
+            if(is_null($user)) {
+                return $this->respond(['status' => $status, 'message' => $msg], 400);
+            }
+    
+            // Validasi password
+            $pwd_verify = password_verify($password, $user['password']);
+            if(!$pwd_verify) {
+                $msg = "Password yang anda masukkan salah";
+                return $this->respond(['status' => $status, 'message' => $msg], 400);
+            }
+    
+            // Get User Detail
+            $user_detail = $this->userModel->getDetailByUsername(trim($user['username']));
+    
+            // Device ID validation
+            if($user_detail['device_id'] == null && $device_id != '') {
+                $this->userModel
+                ->where('usr_id', $user_detail['usr_id'])
+                ->set(['device_id' => $device_id])
+                ->update();
 
-        $pwd_verify = password_verify($password, $user['password']);
-   
-        if(!$pwd_verify) {
-            $msg = "Password yang anda masukkan salah";
-            return $this->respond(['status' => $status, 'message' => $msg], 401);
+                $user_detail['device_id'] = $device_id;
+                
+            } else if ($user_detail['device_id'] != $device_id) {
+                $msg = "Perangkat yang anda gunakan tidak terdaftar";
+                return $this->respond(['status' => $status, 'message' => $msg], 400);
+            }
+      
+            $key = getenv('JWT_SECRET');  
+            $payload = array(
+                "id" => trim($user['usr_id']),
+                "username" => trim($user['username']),
+                "iat" => strtotime("now"), //Time the JWT issued at
+                "exp" => strtotime("+7 day", strtotime("now")), // Expiration time of token
+            );
+            $token = JWT::encode($payload, $key, 'HS256');
+    
+            $response = [
+                'status'        => 'success',
+                'message'       => 'Login Sukses',
+                'token'         => $token,
+                'token_expired' => date('Y-m-d H:i:s', strtotime("+7 day", strtotime("now"))),
+                'user'          => $user_detail,
+            ];
+            $code = 200;
+        } catch (Exception $e) {
+            $response = [
+                'status'        => 'failed',
+                'message'       => 'Login gagal: '.$e->getMessage(),
+            ];
+            $code = 500;
         }
-  
-        $key = getenv('JWT_SECRET');  
-        $payload = array(
-            "id" => trim($user['usr_id']),
-            "username" => trim($user['username']),
-            "iat" => strtotime("now"), //Time the JWT issued at
-            "exp" => strtotime("+7 day", strtotime("now")), // Expiration time of token
-        );
-        $token = JWT::encode($payload, $key, 'HS256');
-  
-        $response = [
-            'status' => 'success',
-            'message' => 'Login Sukses',
-            'token' => $token,
-            "token_expired" => date('Y-m-d H:i:s', strtotime("+7 day", strtotime("now"))),
-        ];
-          
-        return $this->respond($response, 200);
+           
+        return $this->respond($response, $code);
     }
 
     public function register() {
@@ -122,7 +149,7 @@ class Api extends BaseController
                 'message' => 'Invalid Input'
             ];
 
-            return $this->respond($response , 409);
+            return $this->respond($response , 400);
         }
     }
 
@@ -142,6 +169,26 @@ class Api extends BaseController
 
         try {
             $data = $this->userModel->where('is_deleted', '0')->findAll();
+            $status = 'success';
+            $msg = '';
+            $code = 200;
+        } catch (Exception $e) {
+            $msg .= ": ". $e->getMessage();
+        }
+        return $this->respond(['status' => $status, 'data' => $data, 'message' => $msg], $code);
+    }
+
+    public function getDetailByUsername($username) {
+        $status = 'failed';
+        $msg    = 'Gagal mendapatkan data';
+        $code   = 500;
+        $data   = [];
+        
+        try {
+            if($username == '') throw new Exception("Gagal: User ID tidak ditemukan");
+
+            $data = $this->userModel->getDetailByUsername($username);
+
             $status = 'success';
             $msg = '';
             $code = 200;
@@ -218,7 +265,7 @@ class Api extends BaseController
                     'message' => 'Invalid Input'
                 ];
     
-                return $this->respond($response , 409);
+                return $this->respond($response , 400);
             }
         } catch (Exception $e) {
             $msg .= ": ". $e->getMessage();
@@ -227,7 +274,7 @@ class Api extends BaseController
     }
 //
 
-// Radius and Location
+// User Info
     public function getGroupData() {
         $status = 'failed';
         $msg    = 'Gagal mendapatkan data';

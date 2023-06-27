@@ -38,6 +38,7 @@ $routes->group('api', function($routes) {
     $routes->post('auth', 'Api::auth');
     $routes->post('register', 'Api::register');
     $routes->get('users', 'Api::getAllUsers', ['filter' => 'authFilter']);
+    $routes->get('user/(:segment)', 'Api::getDetailByUsername/$1');
 
     // Attendance
     $routes->post('getAttendance', 'Api::getAllAttendance', ['filter' => 'authFilter']);

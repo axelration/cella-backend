@@ -60,7 +60,7 @@ class AuthFilter implements FilterInterface
                 if (!$user) {
                     $body = ['status'=>'failed', 'message'=> 'Token tidak valid'];
                     $response->setJSON($body);
-                    $response->setStatusCode(400);
+                    $response->setStatusCode(401);
                     return $response;
                 }
 
@@ -69,13 +69,13 @@ class AuthFilter implements FilterInterface
                 if ($exp < time()) {
                     $body = ['status'=>'failed', 'message'=> 'Sesi token kadaluarsa'];
                     $response->setJSON($body);
-                    $response->setStatusCode(400);
+                    $response->setStatusCode(401);
                     return $response;
                 }
             } else {
                 $body = ['status'=>'failed', 'message'=> 'Token tidak valid'];
                 $response->setJSON($body);
-                $response->setStatusCode(400);
+                $response->setStatusCode(401);
                 return $response;
             }
         } catch (Exception $ex) {
