@@ -24,18 +24,6 @@ class AppCompany extends Migration
                 'type'      => 'TEXT',
                 'null'      => true,
             ],
-            'latitude' => [
-                'type'      => 'FLOAT',
-                'null'      => true,
-            ],
-            'longitude' => [
-                'type'      => 'FLOAT',
-                'null'      => true,
-            ],
-            'radius' => [
-                'type'      => 'INT',
-                'null'      => true,
-            ],
             'mobile_phone' => [
                 'type'       => 'VARCHAR',
                 'constraint'=> 255,

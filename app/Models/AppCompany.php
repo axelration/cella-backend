@@ -16,9 +16,6 @@ class AppCompany extends Model
     protected $allowedFields    = [
         'company_name',
         'address',
-        'latitude',
-        'longitude',
-        'radius',
         'mobile_phone',
         'email',
         'cusr_id',
