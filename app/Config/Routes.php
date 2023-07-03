@@ -22,7 +22,7 @@ $routes->setDefaultController('Api');
 $routes->setDefaultMethod('index');
 $routes->setTranslateURIDashes(false);
 $routes->set404Override('App\Controllers\Api::notfound');
-$routes->setAutoRoute(true);
+$routes->setAutoRoute(false);
 
 /*
  * --------------------------------------------------------------------
@@ -37,12 +37,18 @@ $routes->group('api', function($routes) {
     // Auth
     $routes->post('auth', 'Api::auth');
     $routes->post('register', 'Api::register');
+
+    // User
     $routes->get('users', 'Api::getAllUsers', ['filter' => 'authFilter']);
     $routes->get('user/(:segment)', 'Api::getDetailByUsername/$1');
-
+    $routes->post('user/changePwd', 'Api::updateUserPassword', ['filter' => 'authFilter']);
+    
     // Attendance
     $routes->post('getAttendance', 'Api::getAllAttendance', ['filter' => 'authFilter']);
     $routes->post('setAttendance', 'Api::setAttendance', ['filter' => 'authFilter']);
+    
+    // Statistic
+    $routes->post('getAttendanceStat', 'Api::getAttendanceStat', ['filter' => 'authFilter']);
 
     // Group
     $routes->post('getGroupData', 'Api::getGroupData', ['filter' => 'authFilter']);

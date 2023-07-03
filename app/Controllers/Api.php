@@ -81,7 +81,7 @@ class Api extends BaseController
                 $user_detail['device_id'] = $device_id;
                 
             } else if ($user_detail['device_id'] != $device_id) {
-                $msg = "Perangkat yang anda gunakan tidak terdaftar";
+                $msg = "Perangkat yang anda gunakan tidak sesuai";
                 return $this->respond(['status' => $status, 'message' => $msg], 400);
             }
       
@@ -105,7 +105,7 @@ class Api extends BaseController
         } catch (Exception $e) {
             $response = [
                 'status'        => 'failed',
-                'message'       => 'Login gagal: '.$e->getMessage(),
+                'message'       => 'Login '.$e->getMessage(),
             ];
             $code = 500;
         }
@@ -117,10 +117,27 @@ class Api extends BaseController
         $status = 'failed';
         $msg    = 'Failed to register user';
         $rules = [
-            'username' => ['rules' => 'required|min_length[4]|max_length[255]|is_unique[app_user.username]'],
-            'email' => ['rules' => 'required|min_length[4]|max_length[255]|valid_email|is_unique[app_user.email]'],
-            'password' => ['rules' => 'required|min_length[8]|max_length[255]'],
-            'confirm_password'  => [ 'label' => 'confirm password', 'rules' => 'matches[password]']
+            'username' => ['rules' => 'required|min_length[4]|max_length[255]|is_unique[app_user.username]', 'errors' => [
+                'required' => 'Username tidak boleh kosong',
+                'min_length' => 'Username harus diatas 8 karakter',
+                'max_length' => 'Username harus dibawah 255 karakter',
+                'is_unique' => 'Username sudah terdaftar',
+            ]],
+            'email' => ['rules' => 'required|min_length[4]|max_length[255]|valid_email|is_unique[app_user.email]', 'errors' => [
+                'required' => 'Email tidak boleh kosong',
+                'min_length' => 'Email harus diatas 8 karakter',
+                'max_length' => 'Email harus dibawah 255 karakter',
+                'valid_email' => 'Email tidak valid',
+                'is_unique' => 'Email sudah terdaftar',
+            ]],
+            'password' => ['rules' => 'required|min_length[8]|max_length[255]', 'errors' => [
+                'required' => 'Password tidak boleh kosong',
+                'min_length' => 'Password harus diatas 8 karakter',
+                'max_length' => 'Password harus dibawah 255 karakter',
+            ]],
+            'confirm_password'  => ['label' => 'confirm password', 'rules' => 'matches[password]', 'errors' => [
+                'matches' => 'Konfirmasi password baru tidak sesuai',
+            ]]
         ];
             
   
@@ -145,8 +162,7 @@ class Api extends BaseController
         } else {
             $response = [
                 'status' => $status,
-                'errors' => $this->validator->getErrors(),
-                'message' => 'Invalid Input'
+                'message' => implode(', ', $this->validator->getErrors()),
             ];
 
             return $this->respond($response , 400);
@@ -185,7 +201,7 @@ class Api extends BaseController
         $data   = [];
         
         try {
-            if($username == '') throw new Exception("Gagal: User ID tidak ditemukan");
+            if($username == '') throw new Exception("User ID tidak ditemukan");
 
             $data = $this->userModel->getDetailByUsername($username);
 
@@ -196,6 +212,81 @@ class Api extends BaseController
             $msg .= ": ". $e->getMessage();
         }
         return $this->respond(['status' => $status, 'data' => $data, 'message' => $msg], $code);
+    }
+
+    public function updateUserPassword() {
+        $status = 'failed';
+        $msg    = 'Gagal mendapatkan data';
+        $code   = 500;
+        $data   = [];
+
+        $rules = [
+            'usr_id' => ['rules' => 'required', 'errors'=> [
+                'required' => 'User ID tidak ditemukan'
+            ]],
+            'old_password' => ['rules' => 'required|min_length[8]|max_length[255],', 'errors' => [
+                'required' => 'Password lama tidak boleh kosong',
+                'min_length' => 'Password lama harus diatas 8 karakter',
+                'max_length' => 'Password lama harus dibawah 255 karakter',
+            ]],
+            'password' => ['rules' => 'required|min_length[8]|max_length[255]', 'errors' => [
+                'required' => 'Password baru tidak boleh kosong',
+                'min_length' => 'Password baru harus diatas 8 karakter',
+                'max_length' => 'Password baru harus dibawah 255 karakter',
+            ]],
+            'confirm_password'  => [ 'label' => 'confirm password', 'rules' => 'matches[password]', 'errors' => [
+                'matches' => 'Konfirmasi password baru tidak sesuai',
+            ]],
+        ];
+
+        try {
+            $usr = $this->request->getVar('usr_id') ?? '';
+            $old_pw = $this->request->getVar('old_password') ?? '';
+            $new_pw = $this->request->getVar('password') ?? '';
+            $device_id = $this->request->getVar('device_id') ?? '';
+
+            if($this->validate($rules)) {
+                // User validation
+                $user = $this->userModel->where('usr_id', $usr)->first();
+                if(is_null($user)) {
+                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                }
+
+                if($device_id != $user['device_id']) {
+                    $msg = "Perangkat yang anda gunakan tidak valid";
+                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                }
+        
+                $pwd_verify = password_verify($old_pw, $user['password']);
+                if(!$pwd_verify) {
+                    $msg = "Password yang anda masukkan salah";
+                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                }
+
+                $data = [
+                    'password'          => password_hash($new_pw, PASSWORD_DEFAULT),
+                    'musr_id'           => $usr,
+                    'mtime'             => date('Y-m-d H:i:s'),
+                ];
+    
+                $r = $this->userModel->update($usr, $data);
+                if($r) {
+                    $status = 'success';
+                    $msg = 'Sukses menyimpan data';
+                    $code = 200;
+                }
+            } else {
+                $response = [
+                    'status' => $status,
+                    'message' => implode(', ', $this->validator->getErrors()),
+                ];
+    
+                return $this->respond($response , 400);
+            }
+        } catch (Exception $e) {
+            $msg .= ": ". $e->getMessage();
+        }
+        return $this->respond(['status' => $status, 'data' => [], 'message' => $msg], $code);
     }
 //
 
@@ -208,7 +299,7 @@ class Api extends BaseController
         
         try {
             $usr = $this->request->getVar('usr_id') ?? '';
-            if($usr == '') throw new Exception("Gagal: User ID tidak ditemukan");
+            if($usr == '') throw new Exception("User ID tidak ditemukan");
 
             $type = $this->request->getVar('type') ?? '';
             $typecond = '';
@@ -232,17 +323,34 @@ class Api extends BaseController
         $data   = [];
 
         $rules = [
-            'check_time' => ['rules' => 'required'],
-            'latitude' => ['rules' => 'required'],
-            'longitude' => ['rules' => 'required'],
-            'device_id' => ['rules' => 'required'],
+            'check_time' => ['rules' => 'required', 'errors' => [
+                'required' => 'Waktu presensi tidak boleh kosong',
+            ]],
+            'latitude' => ['rules' => 'required', 'errors' => [
+                'required' => 'Latitude tidak boleh kosong',
+            ]],
+            'longitude' => ['rules' => 'required', 'errors' => [
+                'required' => 'Longitude tidak boleh kosong',
+            ]],
         ];
         
         try {
             $usr = $this->request->getVar('usr_id') ?? '';
-            if($usr == '') throw new Exception("Gagal: User ID tidak ditemukan");
+            if($usr == '') throw new Exception("User ID tidak ditemukan");
+            $device_id = $this->request->getVar('device_id') ?? '';
 
             if($this->validate($rules)) {
+                // User validation
+                $user = $this->userModel->where('usr_id', $usr)->first();
+                if(is_null($user)) {
+                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                }
+                
+                if($device_id != $user['device_id']) {
+                    $msg = "Perangkat yang anda gunakan tidak valid";
+                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                }
+
                 $data = [
                     'type'          => $this->request->getVar('type') ?? '1',
                     'check_time'    => $this->request->getVar('check_time') ?? null,
@@ -261,8 +369,7 @@ class Api extends BaseController
             } else {
                 $response = [
                     'status' => $status,
-                    'errors' => $this->validator->getErrors(),
-                    'message' => 'Invalid Input'
+                    'message' => implode(', ', $this->validator->getErrors()),
                 ];
     
                 return $this->respond($response , 400);
@@ -271,6 +378,27 @@ class Api extends BaseController
             $msg .= ": ". $e->getMessage();
         }
         return $this->respond(['status' => $status, 'data' => [], 'message' => $msg], $code);
+    }
+
+    public function getAttendanceStat() {
+        $status = 'failed';
+        $msg    = 'Gagal mendapatkan data';
+        $code   = 500;
+        $data   = [];
+        
+        try {
+            $usr = $this->request->getVar('usr_id') ?? '';
+            if($usr == '') throw new Exception("User ID tidak ditemukan");
+
+            $data = $this->attendanceModel->getAttendanceStat($usr);
+
+            $status = 'success';
+            $msg = '';
+            $code = 200;
+        } catch (Exception $e) {
+            $msg .= ": ". $e->getMessage();
+        }
+        return $this->respond(['status' => $status, 'data' => $data, 'message' => $msg], $code);
     }
 //
 
@@ -283,7 +411,7 @@ class Api extends BaseController
         
         try {
             $usr = $this->request->getVar('usr_id') ?? '';
-            if($usr == '') throw new Exception("Gagal: User ID tidak ditemukan");
+            if($usr == '') throw new Exception("User ID tidak ditemukan");
 
             $data = $this->groupModel->getGroupData($usr);
 

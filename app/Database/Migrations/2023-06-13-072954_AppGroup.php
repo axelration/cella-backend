@@ -70,6 +70,18 @@ class AppGroup extends Migration
                 'default'   => new RawSql("'0'"),
                 'null'      => true,
             ],
+            'check_in_limit' => [
+                'type'       => 'VARCHAR',
+                'constraint'=> 255,
+                'default'   => new RawSql("'0830'"),
+                'null'      => true,
+            ],
+            'check_out_limit' => [
+                'type'       => 'VARCHAR',
+                'constraint'=> 255,
+                'default'   => new RawSql("'1700'"),
+                'null'      => true,
+            ],
         ]);
         $this->forge->addKey('agp_id', true);
         $this->forge->createTable('app_group');
