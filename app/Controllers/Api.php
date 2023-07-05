@@ -302,10 +302,20 @@ class Api extends BaseController
             if($usr == '') throw new Exception("User ID tidak ditemukan");
 
             $type = $this->request->getVar('type') ?? '';
-            $typecond = '';
-            if($type != '') $typecond = "AND type = '$type'";
+            $device_id = $this->request->getVar('device_id') ?? '';
 
-            $data = $this->attendanceModel->where("is_deleted = '0' AND cusr_id = '' $typecond")->orderBy("check_time","DESC")->findAll();
+            // User validation
+            $user = $this->userModel->where('usr_id', $usr)->first();
+            if(is_null($user)) {
+                return $this->respond(['status' => $status, 'message' => $msg], 400);
+            }
+
+            if($device_id != $user['device_id']) {
+                $msg = "Perangkat yang anda gunakan tidak valid";
+                return $this->respond(['status' => $status, 'message' => $msg], 400);
+            }
+
+            $data = $this->attendanceModel->getAllAttendance($usr, $type);
 
             $status = 'success';
             $msg = '';

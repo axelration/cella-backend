@@ -15,8 +15,12 @@ class GroupSeeder extends Seeder
             'latitude'      => '-6.238351433334787',
             'longitude'     => '106.85262438789536',
             'radius'        => '500',
-            'check_in_time' => '0830',
-            'check_out_time'=> '1700',
+            'check_in_limit' => '08:30:00',
+            'check_out_limit'=> '17:00:00',
+            'check_in_enable' => '06:00:00',
+            'check_out_enable'=> '13:00:00',
+            'check_in_disable' => '09:30:00',
+            'check_out_disable'=> '23:00:00',
         ];
 
         $this->db->table('app_group')->insert($data);

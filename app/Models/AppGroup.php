@@ -60,7 +60,9 @@ class AppGroup extends Model
         $builder->select("
             $this->table.agp_id, $this->table.name, $this->table.acm_id,
             $this->table.address, $this->table.latitude, $this->table.longitude,
-            $this->table.radius, app_user.usr_id, app_user.username
+            $this->table.radius, $this->table.check_in_limit, $this->table.check_out_limit, 
+            $this->table.check_in_enable, $this->table.check_out_enable,
+            $this->table.check_in_disable, $this->table.check_out_disable
         ");
         $builder->join("app_user","$this->table.acm_id = app_user.acm_id","LEFT");
         $builder->where("app_user.usr_id = '$usr_id'");

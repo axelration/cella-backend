@@ -71,15 +71,33 @@ class AppGroup extends Migration
                 'null'      => true,
             ],
             'check_in_limit' => [
-                'type'       => 'VARCHAR',
-                'constraint'=> 255,
-                'default'   => new RawSql("'0830'"),
+                'type'       => 'TIME',
+                'default'   => new RawSql("'08:30:00'"),
                 'null'      => true,
             ],
             'check_out_limit' => [
-                'type'       => 'VARCHAR',
-                'constraint'=> 255,
-                'default'   => new RawSql("'1700'"),
+                'type'       => 'TIME',
+                'default'   => new RawSql("'17:00:00'"),
+                'null'      => true,
+            ],
+            'check_in_enable' => [
+                'type'       => 'TIME',
+                'default'   => new RawSql("'06:00:00'"),
+                'null'      => true,
+            ],
+            'check_out_enable' => [
+                'type'       => 'TIME',
+                'default'   => new RawSql("'13:00:00'"),
+                'null'      => true,
+            ],
+            'check_in_disable' => [
+                'type'       => 'TIME',
+                'default'   => new RawSql("'09:30:00'"),
+                'null'      => true,
+            ],
+            'check_out_disable' => [
+                'type'       => 'TIME',
+                'default'   => new RawSql("'23:00:00'"),
                 'null'      => true,
             ],
         ]);

@@ -51,7 +51,7 @@ $routes->group('api', function($routes) {
     $routes->post('getAttendanceStat', 'Api::getAttendanceStat', ['filter' => 'authFilter']);
 
     // Group
-    $routes->post('getGroupData', 'Api::getGroupData', ['filter' => 'authFilter']);
+    $routes->post('getGroupData', 'Api::getGroupData');
 });
 
 /*
