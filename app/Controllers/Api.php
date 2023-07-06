@@ -361,9 +361,27 @@ class Api extends BaseController
                     return $this->respond(['status' => $status, 'message' => $msg], 400);
                 }
 
+                $type = $this->request->getVar('type') ?? '1';
+                $check_time = $this->request->getVar('check_time');
+                $already_check = $this->attendanceModel
+                ->select("'1'")
+                ->where("(DATE_FORMAT(check_time, '%Y-%m-%d') = DATE_FORMAT('$check_time', '%Y-%m-%d')) AND type = '$type' AND is_deleted = '0'")
+                ->first();
+
+
+                if(isset($already_check) && count($already_check) > 0 && $already_check['1'] == '1') {
+                    $msg = $type == '1' ? 'datang' : 'pulang';
+                    $response = [
+                        'status' => $status,
+                        'message' => "Anda sudah melakukan absen $msg",
+                    ];
+        
+                    return $this->respond($response , 400);
+                }
+
                 $data = [
-                    'type'          => $this->request->getVar('type') ?? '1',
-                    'check_time'    => $this->request->getVar('check_time') ?? null,
+                    'type'          => $type,
+                    'check_time'    => $check_time,
                     'latitude'      => $this->request->getVar('latitude') ?? null,
                     'longitude'     => $this->request->getVar('longitude') ?? null,
                     'device_id'     => $this->request->getVar('device_id') ?? null,
