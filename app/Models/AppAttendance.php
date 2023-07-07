@@ -188,7 +188,7 @@ class AppAttendance extends Model
             ")
             ->join('app_user', "$this->table.cusr_id = app_user.usr_id", 'LEFT')
             ->join('app_group', "app_group.agp_id = app_user.agp_id", 'LEFT')
-            ->where("DATE_FORMAT(check_time, '%Y-%m-%d') = '$date' AND $this->table.is_deleted = '0'")
+            ->where("DATE_FORMAT(check_time, '%Y-%m-%d') = '$date' AND $this->table.is_deleted = '0' AND $this->table.cusr_id = '$usr_id'")
             ->findAll();
 
             $time_in = 'null';
