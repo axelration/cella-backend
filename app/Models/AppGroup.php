@@ -29,31 +29,11 @@ class AppGroup extends Model
         'is_deleted',
     ];
 
-    // Settings
-        // Dates
-        protected $useTimestamps = false;
-        protected $dateFormat    = 'datetime';
-        protected $createdField  = 'ctime';
-        protected $updatedField  = 'mtime';
-        protected $deletedField  = 'dtime';
-
-        // Validation
-        protected $validationRules      = [];
-        protected $validationMessages   = [];
-        protected $skipValidation       = false;
-        protected $cleanValidationRules = true;
-
-        // Callbacks
-        protected $allowCallbacks = true;
-        protected $beforeInsert   = [];
-        protected $afterInsert    = [];
-        protected $beforeUpdate   = [];
-        protected $afterUpdate    = [];
-        protected $beforeFind     = [];
-        protected $afterFind      = [];
-        protected $beforeDelete   = [];
-        protected $afterDelete    = [];
-    //
+    protected $useTimestamps = false;
+    protected $dateFormat    = 'datetime';
+    protected $createdField  = 'ctime';
+    protected $updatedField  = 'mtime';
+    protected $deletedField  = 'dtime';
 
     public function getGroupData($usr_id) {
         $builder = $this->db->table($this->table);
