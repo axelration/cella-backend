@@ -57,49 +57,112 @@ class AppAttendance extends Model
     //
 
     public function getAttendanceStat($usr_id) {
-        $builder = $this->db->table($this->table);
-        $builder->select("
-            $this->table.cusr_id, 
-            (
-                SELECT COUNT(t.check_time) 
-                FROM $this->table t
-                WHERE t.type = 1
-            ) total_check_in, 
-            (
-                SELECT COUNT(t.check_time) 
-                FROM $this->table t
-                WHERE t.type = 2
-            ) total_check_out,
-            (
-                SELECT COUNT(t.check_time) 
-                FROM $this->table t
-            ) total_checked, 
-            (
-                (SELECT COUNT(t.check_time) 
-                FROM $this->table t
-                WHERE t.type = 1 AND DATE_FORMAT(t.check_time, '%Y%m%d') != DATE_FORMAT(CURDATE(), '%Y%m%d')) - 
-                (SELECT COUNT(t.check_time) 
-                FROM $this->table t
-                WHERE t.type = 2 AND DATE_FORMAT(t.check_time, '%Y%m%d') != DATE_FORMAT(CURDATE(), '%Y%m%d'))
-            ) total_not_checked,
-            (
-                SELECT COUNT(t.check_time) 
-                FROM $this->table t
-                WHERE t.type = 1 AND DATE_FORMAT(t.check_time, '%H:%i:%s') > app_group.check_in_limit
-            ) late_check_in,
-            (
-                SELECT COUNT(t.check_time) 
-                FROM $this->table t
-                WHERE t.type = 2 AND DATE_FORMAT(t.check_time, '%H:%i:%s') < app_group.check_out_limit
-            ) early_check_out
-        ");
-        $builder->distinct();
-        $builder->join("app_user","$this->table.cusr_id = app_user.usr_id","LEFT");
-        $builder->join("app_group","app_user.agp_id = app_group.agp_id","LEFT");
-        $builder->where("app_user.usr_id = '$usr_id'");
-        $builder->where("$this->table.is_deleted != '1'");
+        $data = [];
+        $tmp = [];
+        $min = $this->select("DATE_FORMAT(MIN(check_time), '%Y-%m-%d') min")->where("cusr_id = '$usr_id' AND is_deleted = '0'")->first()['min'];
+        $max = $this->select("DATE_FORMAT(MAX(check_time), '%Y-%m-%d') max")->where("cusr_id = '$usr_id' AND is_deleted = '0'")->first()['max'];
+        $min = new DateTime($min);
+        $max = new DateTime($max);
+        $late_ci = 0;
+        $early_co = 0;
+        $total_c = 0;
+        $total_nc = 0;
 
-        $data = $builder->get()->getRowArray();
+        for($i = $min; $i <= $max; $i->modify('+1 day')) {
+            $date = $i->format("Y-m-d");
+            $this->db->simpleQuery("SET lc_time_names = 'id_ID'");
+            $res = $this->select("att_id, check_time, DATE_FORMAT(check_time, '%d %M') date, DATE_FORMAT(check_time, '%H:%i') time, $this->table.type,
+            (CASE 
+                WHEN $this->table.type = '1' AND DATE_FORMAT(check_time, '%H:%i:%s') > app_group.check_in_limit THEN 'Terlambat'
+                WHEN $this->table.type = '2' AND DATE_FORMAT(check_time, '%H:%i:%s') < app_group.check_out_limit THEN 'Pulang Cepat'
+                WHEN check_time IS NULL THEN 'Tidak Ada'
+               ELSE 'On Time' END
+            ) status
+            ")
+            ->join('app_user', "$this->table.cusr_id = app_user.usr_id", 'LEFT')
+            ->join('app_group', "app_group.agp_id = app_user.agp_id", 'LEFT')
+            ->where("$this->table.cusr_id ='$usr_id' AND DATE_FORMAT(check_time, '%Y-%m-%d') = '$date' AND $this->table.is_deleted = '0'")
+            ->findAll();
+
+
+            // Exclude off days and today
+            if(!preg_match('/(saturday|sunday)/i', $i->format('l'))) {
+                // Check late time
+                $time_in = 'null';
+                $time_out = 'null';
+                foreach($res as $v) {
+                    if($v['type'] == '1') {
+                        $time_in = $v['time'];
+                        if($v['status'] != 'On Time') $late_ci++;
+                    } else {
+                        $time_out = $v['time'];
+                        if($v['status'] != 'On Time') $early_co++;
+                    }
+                }
+
+                $restmp = array(
+                    'date'  => $date,
+                    'in'    => $time_in,
+                    'out'   => $time_out,
+                );
+
+                array_push($tmp, $restmp);
+            }
+
+        }
+
+        $groupModel = new AppGroup();
+        $limit = $groupModel->select('check_in_limit, check_out_limit, check_in_enable, check_out_enable, check_in_disable, check_out_disable')
+        ->join('app_user', 'app_user.agp_id = app_group.agp_id', 'LEFT')
+        ->where("app_user.usr_id = '$usr_id'")
+        ->first();
+
+        $now = date('H:i:s');
+
+        // Total Check and not check
+        foreach($tmp as $v) {
+            if(isset($v['in'])) {
+                if($v['in'] != 'null') {
+                    $total_c++;
+                } else {
+                    if ($v['date'] != date('Y-m-d')) {
+                        $total_nc++;
+                    } else if (strtotime($now) > strtotime($limit['check_in_enable'])) {
+                        $total_nc++;
+                    }
+                }
+            }
+            if (isset($v['out'])) {
+                if ($v['out'] != 'null') {
+                    $total_c++;
+                } else {
+                    if ($v['date'] != date('Y-m-d')) {
+                        $total_nc++;
+                    } else if (strtotime($now) > strtotime($limit['check_out_enable'])) {
+                        $total_nc++;
+                    }
+                }
+            }
+        }
+
+        $total_cnc = $total_c + $total_nc;
+        $total_le = $late_ci + $early_co;
+        $per_c = $total_c / $total_cnc * 100;
+        $per_nc = $total_nc / $total_cnc * 100;
+        $per_late = $late_ci / $total_le * 100;
+        $per_early = $early_co / $total_le * 100;
+
+        $data = array(
+            'late_check_in' => $late_ci, 
+            'early_check_out' => $early_co, 
+            'total_checked' => $total_c, 
+            'total_not_checked' => $total_nc,
+            'percentage_checked' => $per_c . '%',
+            'percentage_not_checked' => $per_nc . '%',
+            'percentage_late' => $per_late . '%',
+            'percentage_early' => $per_early . '%',
+        );
+
         return $data;
     }
 
@@ -125,7 +188,7 @@ class AppAttendance extends Model
             ")
             ->join('app_user', "$this->table.cusr_id = app_user.usr_id", 'LEFT')
             ->join('app_group', "app_group.agp_id = app_user.agp_id", 'LEFT')
-            ->where("DATE_FORMAT(check_time, '%Y-%m-%d') = '$date'")
+            ->where("DATE_FORMAT(check_time, '%Y-%m-%d') = '$date' AND $this->table.is_deleted = '0'")
             ->findAll();
 
             $time_in = 'null';
