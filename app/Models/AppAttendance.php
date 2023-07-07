@@ -193,7 +193,7 @@ class AppAttendance extends Model
 
             $time_in = 'null';
             $time_out = 'null';
-            $ts = 'On Time';
+            $ts = empty($res) || count($res) < 2 ? 'Tidak Ada' : 'On Time';
             foreach($res as $v) {
                 $st1 = '';
                 $st2 = '';
