@@ -40,6 +40,7 @@ class AppGroup extends Model
         $builder->select("
             $this->table.agp_id, $this->table.name, $this->table.acm_id,
             $this->table.address, $this->table.latitude, $this->table.longitude,
+            $this->table.latitude_delta, $this->table.longitude_delta,
             $this->table.radius, $this->table.check_in_limit, $this->table.check_out_limit, 
             $this->table.check_in_enable, $this->table.check_out_enable,
             $this->table.check_in_disable, $this->table.check_out_disable
