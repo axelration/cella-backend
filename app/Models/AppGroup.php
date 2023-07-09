@@ -44,7 +44,7 @@ class AppGroup extends Model
             $this->table.check_in_enable, $this->table.check_out_enable,
             $this->table.check_in_disable, $this->table.check_out_disable
         ");
-        $builder->join("app_user","$this->table.acm_id = app_user.acm_id","LEFT");
+        $builder->join("app_user","$this->table.agp_id = app_user.agp_id","LEFT");
         $builder->where("app_user.usr_id = '$usr_id'");
 
         $data = $builder->get()->getRow();
