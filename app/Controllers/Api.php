@@ -73,13 +73,15 @@ class Api extends BaseController
     
             // Device ID validation
             if($user_detail['device_id'] == null && $device_id != '') {
-                $this->userModel
-                ->where('usr_id', $user_detail['usr_id'])
-                ->set(['device_id' => $device_id])
-                ->update();
-
-                $user_detail['device_id'] = $device_id;
-                
+                // Exclusion of device ID
+                if(!preg_match('/(cella|unindra)/', $username)) {
+                    $this->userModel
+                    ->where('usr_id', $user_detail['usr_id'])
+                    ->set(['device_id' => $device_id])
+                    ->update();
+    
+                    $user_detail['device_id'] = $device_id;
+                }
             } else if ($user_detail['device_id'] != $device_id) {
                 $msg = "Perangkat yang anda gunakan tidak sesuai";
                 return $this->respond(['status' => $status, 'message' => $msg], 400);
@@ -252,9 +254,11 @@ class Api extends BaseController
                     return $this->respond(['status' => $status, 'message' => $msg], 400);
                 }
 
-                if($device_id != $user['device_id']) {
-                    $msg = "Perangkat yang anda gunakan tidak valid";
-                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                if(!preg_match('/(cella|unindra)/', $user['username'])) {
+                    if($device_id != $user['device_id']) {
+                        $msg = "Perangkat yang anda gunakan tidak valid";
+                        return $this->respond(['status' => $status, 'message' => $msg], 400);
+                    }
                 }
         
                 $pwd_verify = password_verify($old_pw, $user['password']);
@@ -310,9 +314,11 @@ class Api extends BaseController
                 return $this->respond(['status' => $status, 'message' => $msg], 400);
             }
 
-            if($device_id != $user['device_id']) {
-                $msg = "Perangkat yang anda gunakan tidak valid";
-                return $this->respond(['status' => $status, 'message' => $msg], 400);
+            if(!preg_match('/(cella|unindra)/', $user['username'])) {
+                if($device_id != $user['device_id']) {
+                    $msg = "Perangkat yang anda gunakan tidak valid";
+                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                }
             }
 
             $data = $this->attendanceModel->getAllAttendance($usr, $type);
@@ -356,9 +362,11 @@ class Api extends BaseController
                     return $this->respond(['status' => $status, 'message' => $msg], 400);
                 }
                 
-                if($device_id != $user['device_id']) {
-                    $msg = "Perangkat yang anda gunakan tidak valid";
-                    return $this->respond(['status' => $status, 'message' => $msg], 400);
+                if(!preg_match('/(cella|unindra)/', $user['username'])) {
+                    if($device_id != $user['device_id']) {
+                        $msg = "Perangkat yang anda gunakan tidak valid";
+                        return $this->respond(['status' => $status, 'message' => $msg], 400);
+                    }
                 }
 
                 $type = $this->request->getVar('type') ?? '1';
