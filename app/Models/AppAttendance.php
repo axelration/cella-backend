@@ -127,10 +127,10 @@ class AppAttendance extends Model
 
         $total_cnc = $total_c + $total_nc;
         $total_le = $late_ci + $early_co;
-        $per_c = $total_c / $total_cnc * 100;
-        $per_nc = $total_nc / $total_cnc * 100;
-        $per_late = $late_ci / $total_le * 100;
-        $per_early = $early_co / $total_le * 100;
+        $per_c = round($total_c / $total_cnc, 4) * 100;
+        $per_nc = round($total_nc / $total_cnc, 4) * 100;
+        $per_late = round($late_ci / $total_le, 4) * 100;
+        $per_early = round($early_co / $total_le, 4) * 100;
 
         $data = array(
             'late_check_in' => $late_ci, 
@@ -154,10 +154,10 @@ class AppAttendance extends Model
         $max = new DateTime($max);
 
         $no = 1;
-        for($i = $min; $i <= $max; $i->modify('+1 day')) {
+        for($i = $max; $i >= $min; $i->modify('-1 day')) {
             $date = $i->format("Y-m-d");
             $displaydate = $i->format("d F");
-            $this->db->simpleQuery("SET lc_time_names = 'id_ID'");
+            // $this->db->simpleQuery("SET lc_time_names = 'id_ID'");
             $res = $this->select("att_id, check_time, DATE_FORMAT(check_time, '%d %M') date, DATE_FORMAT(check_time, '%H:%i') time, $this->table.type,
             (CASE 
                 WHEN $this->table.type = '1' AND DATE_FORMAT(check_time, '%H:%i:%s') > app_group.check_in_limit THEN 'Terlambat'
