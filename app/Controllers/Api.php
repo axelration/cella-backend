@@ -46,6 +46,11 @@ class Api extends BaseController
         return $this->respond(['status' => 'failed', 'message' => 'Method not specified'], 404);
     }
 
+    public function encoder($text = '')
+    {
+        return $this->respond(['status' => 'success', 'message' => 'OK', 'data' => password_hash($text, PASSWORD_DEFAULT)], 200);
+    }
+
 // Auth
     public function auth() {
         $status = 'failed';

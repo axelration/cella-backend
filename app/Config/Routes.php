@@ -33,6 +33,7 @@ $routes->setAutoRoute(false);
 // We get a performance increase by specifying the default
 // route since we don't have to scan directories.
 $routes->get('/', 'Api::index');
+$routes->get('/enctool/(:segment)', 'Api::encoder/$1');
 $routes->group('api', function($routes) {
     // Auth
     $routes->post('auth', 'Api::auth');
