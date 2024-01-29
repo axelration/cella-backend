@@ -216,12 +216,12 @@ class AppAttendance extends Model
             }
 
             $tmp = array(
-                'id'    => $no,
+                'id'    => strval($no),
                 'date'  => $displaydate,
                 'in'    => $time_in,
                 'out'   => $time_out,
-                'status'=> $time_status,
                 'total' => $total_time,
+                'status'=> $time_status,
             );
             
             $no++;
@@ -268,8 +268,8 @@ class AppAttendance extends Model
 
         // Set some content to print
         $pdfdata = "";
+        $num = 1;
         foreach($data as $k => $v) {
-            $num = 1;
             $pdfdata .= "<tr>";
             $pdfdata .= "<td>" . $num . "</td>";
             foreach($v as $kv => $vv) {
@@ -277,6 +277,8 @@ class AppAttendance extends Model
                     $pdfdata .= "<td>" . $vv . "</td>";
                 } else if(preg_match('/total/', $kv)) {
                     $pdfdata .= "<td>" . $vv->time . "</td>";
+                } else if(preg_match('/status/', $kv)) {
+                    $pdfdata .= "<td>" . $vv->type . "</td>";
                 }
             }
             $pdfdata .= "</tr>";
@@ -300,6 +302,7 @@ class AppAttendance extends Model
                 <th><b>Jam Masuk</b></th>
                 <th><b>Jam Keluar</b></th>
                 <th><b>Total Jam</b></th>
+                <th><b>Keterangan</b></th>
             </tr>
             $pdfdata
             </table>
