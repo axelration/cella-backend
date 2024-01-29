@@ -33,7 +33,9 @@ $routes->setAutoRoute(false);
 // We get a performance increase by specifying the default
 // route since we don't have to scan directories.
 $routes->get('/', 'Api::index');
+$routes->get('/index', 'Api::index');
 $routes->get('/enctool/(:segment)', 'Api::encoder/$1');
+$routes->get('uploads/(:segment)', 'Api::getFile/$1');
 $routes->group('api', function($routes) {
     // Auth
     $routes->post('auth', 'Api::auth');
@@ -53,6 +55,10 @@ $routes->group('api', function($routes) {
 
     // Group
     $routes->post('getGroupData', 'Api::getGroupData');
+    
+    // Miscellaneous
+    $routes->post('deleteFileTmp', 'Api::deleteFileTmp', ['filter' => 'authFilter']);
+    $routes->get('uploads/(:segment)', 'Api::getFile/$1', ['filter' => 'authFilter']);
 });
 
 /*

@@ -11,6 +11,7 @@ use App\Models\AppUser;
 use CodeIgniter\API\ResponseTrait;
 use CodeIgniter\HTTP\RequestInterface;
 use CodeIgniter\HTTP\ResponseInterface;
+use Error;
 use Exception;
 use Psr\Log\LoggerInterface;
 use Firebase\JWT\JWT;
@@ -465,4 +466,43 @@ class Api extends BaseController
         return $this->respond(['status' => $status, 'data' => $data, 'message' => $msg], $code);
     }
 // 
+
+// Misc
+    function getFile($request_url) {
+        if($request_url != '' && file_exists(WRITEPATH . 'uploads/' . $request_url)) {
+            header('Content-Type: application/octet-stream');
+            header("Content-Transfer-Encoding: Binary"); 
+            header("Content-disposition: attachment; filename=\"" . WRITEPATH . 'uploads/' . $request_url . "\""); 
+            readfile(WRITEPATH . 'uploads/' . $request_url);
+            exit();// end process to prevent any problems.
+        } else {
+            // throw new Exception("File tidak ditemukan");
+        }
+        exit();// end process to prevent any problems.
+    }
+
+    public function deleteFileTmp() {
+        $status = 'failed';
+        $msg    = 'Gagal menghapus data';
+        $code   = 500;
+        $data   = [];
+        
+        try {
+            $filename = $this->request->getVar('file_name') ?? '';
+
+            if($filename != '' && file_exists(WRITEPATH . 'uploads/' . $filename)) {
+                unlink(WRITEPATH . 'uploads/' . $filename);
+            } else {
+                // throw new Exception("File tidak ditemukan");
+            }
+
+            $status = 'success';
+            $msg = '';
+            $code = 200;
+        } catch (Exception $e) {
+            $msg .= ": ". $e->getMessage();
+        }
+        return $this->respond(['status' => $status, 'data' => $data, 'message' => $msg], $code);
+    }
+//
 }
